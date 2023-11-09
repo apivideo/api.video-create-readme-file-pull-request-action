@@ -1,0 +1,80 @@
+name: 'Create documentation pull request'
+description: 'Create documentation pull request'
+inputs:
+  source-file-path:  
+    description: 'The path of the README file to modify'
+    required: true    
+  destination-repository: 
+    description: 'Repository where the PR should be created'
+    required: true
+  destination-path: 
+    description: 'Path of the markdown file to be generated in the destination repo'
+    required: true
+  destination-filename: 
+    description: 'Name of the markdown file to be generated in the destination repo'
+    required: true
+  pat:
+    description: "Private access token"
+    required: true
+outputs:
+  response: # id of output
+    description: 'a'
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js 16
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Set environment variables from action inputs
+      shell: bash
+      run: |
+        echo "SOURCE_FILE_PATH=${{ inputs.source-file-path }}" >> $GITHUB_ENV
+        echo "DESTINATION_REPOSITORY=${{ inputs.destination-repository }}" >> $GITHUB_ENV
+        echo "DESTINATION_PATH=${{ inputs.destination-path }}" >> $GITHUB_ENV
+        echo "DESTINATION_FILENAME=${{ inputs.destination-filename }}" >> $GITHUB_ENV
+        echo "DESTINATION_REPOSITORY_TEMP_FOLDER=.temp-destination-repo-folder" >> $GITHUB_ENV
+        
+    - name: Extract repository name
+      id: repo_name
+      shell: bash
+      run: |
+        echo "::set-output name=REPO_NAME::$(echo $GITHUB_REPOSITORY | sed 's|.*/||')"
+        echo "::set-output name=SHORT_REPO_NAME::$(echo $GITHUB_REPOSITORY | sed 's|.*/||' | sed 's|api.video-||')"
+
+    - name: Create destination repository folder
+      shell: bash
+      run: |
+        mkdir -p ${{ env.DESTINATION_REPOSITORY_TEMP_FOLDER}}/${{ env.DESTINATION_PATH }}
+
+
+    - name: Checkout destination repository
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ env.DESTINATION_REPOSITORY }}
+        token: ${{ inputs.pat }}
+        path: ${{ env.DESTINATION_REPOSITORY_TEMP_FOLDER }}    
+
+    - name: Apply some modification to the README
+      shell: bash
+      run: node ${{ github.action_path }}/dist/index.js
+
+
+    - name: Create the pull request on the destination repository
+      uses: peter-evans/create-pull-request@v3
+      id: cpr
+      with:
+        token: ${{ inputs.pat }}
+        path: ${{ env.DESTINATION_REPOSITORY_TEMP_FOLDER }}
+        commit-message: ${{ github.event.pull_request.title }}
+        committer: GitHub <noreply@github.com>
+        author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+        branch: ${{ steps.repo_name.outputs.SHORT_REPO_NAME }}-${{ github.event.pull_request.head.ref }}
+        title: "[SDK README - ${{ steps.repo_name.outputs.REPO_NAME }}] ${{ github.event.pull_request.title }}"
+        body: |
+          > ${{ github.event.pull_request.body }}
+          > Created by @${{ github.actor }} via ${{ github.event.pull_request.html_url }}
+        delete-branch: true
+        labels: ${{ join(github.event.pull_request.labels.*.name) }}
+        assignees: ${{ join(github.event.pull_request.assignees.*.login) }}
