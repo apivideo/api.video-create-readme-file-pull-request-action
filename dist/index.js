@@ -6207,7 +6207,7 @@ try {
     content = removeDocumentationExcluded(content);
     content = extractDocumentationOnly(content);
     content = addWarningComment(content);
-    content = modifyCodeBlocks(content);
+    // content = modifyCodeBlocks(content);
     content = escapeCurlyBraces(content);
 
     fs.writeFileSync(destinationFilePath.trim(), content);
