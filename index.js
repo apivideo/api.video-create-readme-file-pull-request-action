@@ -31,17 +31,17 @@ function escapeCurlyBraces(str) {
 }
 
 function removeMarkdownLinksFromMetadata(markdown) {
-    const metadataRegex = /---([\s\S]*?)---/g;
-  
-    const replaceLinks = (text) => text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
-  
-    const processedMarkdown = markdown.replace(metadataRegex, (match, content) => {
-      const newContent = replaceLinks(content);
-      return `---${newContent}---`;
-    });
-  
-    return processedMarkdown;
-  }
+  const metadataRegex = /---([\s\S]*?)---/;
+
+  const replaceLinks = (text) => text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+  const processedMarkdown = markdown.replace(metadataRegex, (match, content) => {
+    const newContent = replaceLinks(content);
+    return `---${newContent}---`;
+  });
+
+  return processedMarkdown;
+}
 
 try {
     const sourceFilePath = process.env.SOURCE_FILE_PATH;
