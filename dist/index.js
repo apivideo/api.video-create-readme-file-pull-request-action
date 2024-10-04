@@ -6196,6 +6196,18 @@ function escapeCurlyBraces(str) {
     return str.replace(/(.*[\//w]+)\{(\w+)\}([\//w]+.*)/g, '$1\\{$2}$3');
 }
 
+function removeMarkdownLinksFromMetadata(markdown) {
+    const metadataRegex = /---([\s\S]*?)---/g;
+  
+    const replaceLinks = (text) => text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+  
+    const processedMarkdown = markdown.replace(metadataRegex, (match, content) => {
+      const newContent = replaceLinks(content);
+      return `---${newContent}---`;
+    });
+  
+    return processedMarkdown;
+  }
 
 try {
     const sourceFilePath = process.env.SOURCE_FILE_PATH;
@@ -6209,6 +6221,7 @@ try {
     content = addWarningComment(content);
     // content = modifyCodeBlocks(content);
     content = escapeCurlyBraces(content);
+    content = removeMarkdownLinksFromMetadata(content);
 
     fs.writeFileSync(destinationFilePath.trim(), content);
 
